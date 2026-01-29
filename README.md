@@ -82,5 +82,5 @@ The **Ghoomo** brand represents curiosity and the joy of exploration.
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by the Ghoomo Team</sub>
+  <sub>Built with ❤️ by Abhishek and team</sub>
 </div>
