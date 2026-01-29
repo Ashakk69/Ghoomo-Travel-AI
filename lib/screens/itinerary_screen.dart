@@ -1,21 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:uuid/uuid.dart';
 import '../models/destination.dart';
 import '../models/itinerary.dart';
 import '../models/currency.dart';
+import '../models/saved_trip.dart';
+import '../models/user_persona.dart';
+import '../services/trip_storage_service.dart';
 import '../widgets/cost_display.dart';
+import 'dashboard_screen.dart';
 
-class ItineraryScreen extends StatelessWidget {
+class ItineraryScreen extends StatefulWidget {
   final Destination destination;
   final List<DayPlan> itinerary;
   final Currency currency;
+  final double budget;
+  final int days;
+  final Set<String> interests;
+  final UserPersona persona;
 
   const ItineraryScreen({
     super.key,
     required this.destination,
     required this.itinerary,
     required this.currency,
+    required this.budget,
+    required this.days,
+    required this.interests,
+    required this.persona,
   });
+
+  @override
+  State<ItineraryScreen> createState() => _ItineraryScreenState();
+}
+
+class _ItineraryScreenState extends State<ItineraryScreen> {
+  final TripStorageService _storageService = TripStorageService();
+  bool _isSaving = false;
+
+  Future<void> _saveTrip() async {
+    setState(() => _isSaving = true);
+
+    // Create new SavedTrip
+    final trip = SavedTrip(
+      id: const Uuid().v4(),
+      destination: widget.destination,
+      persona: widget.persona,
+      currency: widget.currency,
+      budget: widget.budget,
+      days: widget.days,
+      interests: widget.interests,
+      createdAt: DateTime.now(),
+      // In a real app we'd serialize the itinerary too,
+      // but for now we're just saving the metadata
+      itinerary: null,
+    );
+
+    await _storageService.saveTrip(trip);
+
+    if (mounted) {
+      setState(() => _isSaving = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Trip saved to Dashboard!',
+            style: GoogleFonts.outfit(color: Colors.white),
+          ),
+          backgroundColor: Colors.green,
+          action: SnackBarAction(
+            label: 'VIEW',
+            textColor: Colors.white,
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const DashboardScreen()),
+              );
+            },
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,12 +94,27 @@ class ItineraryScreen extends StatelessWidget {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: _isSaving ? null : _saveTrip,
+            icon: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.bookmark_border),
+            tooltip: 'Save Trip',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: itinerary.length,
+        itemCount: widget.itinerary.length,
         itemBuilder: (context, index) {
-          final day = itinerary[index];
+          final day = widget.itinerary[index];
           return Card(
             margin: const EdgeInsets.only(bottom: 16),
             color: const Color(0xFF1E1E1E),
@@ -82,7 +163,7 @@ class ItineraryScreen extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 4),
                             child: CostDisplay(
                               costInUSD: item.cost,
-                              displayCurrency: currency,
+                              displayCurrency: widget.currency,
                               showConversion: false,
                               fontSize: 13,
                             ),

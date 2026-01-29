@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../models/destination.dart';
 import '../models/user_persona.dart';
 import '../models/currency.dart';
@@ -58,13 +59,14 @@ class SavedTrip {
         destination: destination,
         persona: persona,
         currency: currency,
-        budget: json['budget'],
-        days: json['days'],
-        interests: Set<String>.from(json['interests']),
+        budget: (json['budget'] as num).toDouble(),
+        days: json['days'] as int,
+        interests: (json['interests'] as List).map((e) => e.toString()).toSet(),
         createdAt: DateTime.parse(json['createdAt']),
         itinerary: json['itinerary'],
       );
     } catch (e) {
+      debugPrint('Error parsing saved trip: $e');
       return null;
     }
   }

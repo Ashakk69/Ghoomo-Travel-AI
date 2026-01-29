@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/destination.dart';
 import '../widgets/destination_card.dart';
+import 'dashboard_screen.dart';
 import 'persona_selection_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -100,21 +101,44 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 )),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Where to next?',
-                        style: GoogleFonts.outfit(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Where to next?',
+                            style: GoogleFonts.outfit(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Swipe to explore your next adventure',
+                            style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              color: Colors.white54,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        'Swipe to explore your next adventure',
-                        style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          color: Colors.white54,
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[900],
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const DashboardScreen(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.luggage, color: Colors.white),
+                          tooltip: 'My Trips',
                         ),
                       ),
                     ],

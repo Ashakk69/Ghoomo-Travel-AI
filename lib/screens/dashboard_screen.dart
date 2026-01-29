@@ -213,6 +213,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: Colors.white38,
               ),
             ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: trip.interests.take(3).map((interest) {
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    interest,
+                    style: GoogleFonts.outfit(
+                      fontSize: 10,
+                      color: Colors.white70,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
           ],
         ),
         trailing: Icon(

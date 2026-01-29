@@ -61,6 +61,10 @@ class _LoadingScreenState extends State<LoadingScreen>
               destination: widget.destination,
               itinerary: itinerary,
               currency: widget.currency,
+              budget: widget.budgetUSD,
+              days: widget.days,
+              interests: widget.interests,
+              persona: widget.persona,
             ),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
