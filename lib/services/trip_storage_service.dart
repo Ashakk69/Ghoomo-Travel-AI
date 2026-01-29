@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/saved_trip.dart';
 
@@ -15,7 +16,15 @@ class TripStorageService {
 
     // Save to storage
     final tripsJson = trips.map((t) => t.toJson()).toList();
-    await prefs.setString(_tripsKey, json.encode(tripsJson));
+    final jsonString = json.encode(tripsJson);
+    debugPrint('Attempting to save: $jsonString');
+
+    final success = await prefs.setString(_tripsKey, jsonString);
+    if (!success) {
+      throw Exception(
+          'Failed to write to shared preferences (storage full or permission denied)');
+    }
+    debugPrint('Save successful!');
   }
 
   // Get all saved trips

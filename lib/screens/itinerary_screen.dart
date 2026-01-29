@@ -94,21 +94,6 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: _isSaving ? null : _saveTrip,
-            icon: _isSaving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
-                : const Icon(Icons.bookmark_border),
-            tooltip: 'Save Trip',
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -178,14 +163,23 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.popUntil(context, (route) => route.isFirst);
-        },
+        onPressed: _isSaving ? null : _saveTrip,
         backgroundColor: Theme.of(context).primaryColor,
-        icon: const Icon(Icons.check, color: Colors.white),
-        label: Text('Finish',
-            style: GoogleFonts.outfit(
-                fontWeight: FontWeight.bold, color: Colors.white)),
+        icon: _isSaving
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white),
+              )
+            : const Icon(Icons.bookmark, color: Colors.white),
+        label: Text(
+          _isSaving ? 'Saving...' : 'Save Trip',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }
