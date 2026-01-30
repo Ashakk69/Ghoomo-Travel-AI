@@ -1,10 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'services/notification_service.dart';
+import 'services/fcm_service.dart';
+import 'services/auth_service.dart';
 import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
+
+  // Initialize notification service
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+  await notificationService.requestPermissions();
+
+  // Initialize FCM service (will fail gracefully if Firebase not configured)
+  try {
+    final fcmService = FCMService();
+    await fcmService.initialize();
+  } catch (e) {
+    debugPrint('FCM initialization skipped: $e');
+  }
+
+  // Initialize auth service
+  final authService = AuthService();
+  await authService.initialize();
 
   // Enable high refresh rate (120Hz) for fluid animations
   await SystemChrome.setPreferredOrientations([
@@ -15,11 +41,13 @@ void main() async {
   // Enable high refresh rate mode
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-  runApp(const TravelPlannerApp());
+  runApp(TravelPlannerApp(authService: authService));
 }
 
 class TravelPlannerApp extends StatelessWidget {
-  const TravelPlannerApp({super.key});
+  final AuthService authService;
+
+  const TravelPlannerApp({super.key, required this.authService});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +71,34 @@ class TravelPlannerApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: FutureBuilder<Widget>(
+        future: _determineInitialScreen(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF6C63FF),
+                ),
+              ),
+            );
+          }
+          return snapshot.data ?? const LoginScreen();
+        },
+      ),
     );
+  }
+
+  Future<Widget> _determineInitialScreen() async {
+    final isLoggedIn = await authService.isLoggedIn();
+    final hasSeenOnboarding = await authService.hasSeenOnboarding();
+
+    if (isLoggedIn) {
+      return const HomeScreen();
+    } else if (hasSeenOnboarding) {
+      return const LoginScreen();
+    } else {
+      return const OnboardingScreen();
+    }
   }
 }

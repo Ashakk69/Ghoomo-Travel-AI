@@ -12,6 +12,8 @@ class SavedTrip {
   final int days;
   final Set<String> interests;
   final DateTime createdAt;
+  final DateTime?
+      startDate; // Trip start date for weather forecasts and notifications
   final String? itinerary;
 
   SavedTrip({
@@ -23,8 +25,15 @@ class SavedTrip {
     required this.days,
     required this.interests,
     required this.createdAt,
+    this.startDate,
     this.itinerary,
   });
+
+  /// Calculate trip end date
+  DateTime? get endDate {
+    if (startDate == null) return null;
+    return startDate!.add(Duration(days: days));
+  }
 
   // Convert to JSON for storage
   Map<String, dynamic> toJson() {
@@ -37,6 +46,7 @@ class SavedTrip {
       'days': days,
       'interests': interests.toList(),
       'createdAt': createdAt.toIso8601String(),
+      'startDate': startDate?.toIso8601String(),
       'itinerary': itinerary,
     };
   }
@@ -63,6 +73,9 @@ class SavedTrip {
         days: json['days'] as int,
         interests: (json['interests'] as List).map((e) => e.toString()).toSet(),
         createdAt: DateTime.parse(json['createdAt']),
+        startDate: json['startDate'] != null
+            ? DateTime.parse(json['startDate'])
+            : null,
         itinerary: json['itinerary'],
       );
     } catch (e) {

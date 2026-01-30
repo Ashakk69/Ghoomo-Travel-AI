@@ -6,8 +6,16 @@ import '../models/itinerary.dart';
 import '../models/currency.dart';
 import '../models/saved_trip.dart';
 import '../models/user_persona.dart';
+import '../models/weather_data.dart';
+import '../models/flight_info.dart';
+import '../models/hotel_info.dart';
 import '../services/trip_storage_service.dart';
+import '../services/weather_service.dart';
+import '../services/travel_data_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/cost_display.dart';
+import '../widgets/weather_day_widget.dart';
+import '../widgets/travel_data_bottom_sheet.dart';
 import 'dashboard_screen.dart';
 
 class ItineraryScreen extends StatefulWidget {
@@ -36,12 +44,41 @@ class ItineraryScreen extends StatefulWidget {
 
 class _ItineraryScreenState extends State<ItineraryScreen> {
   final TripStorageService _storageService = TripStorageService();
+  final WeatherService _weatherService = WeatherService();
+  final TravelDataService _travelDataService = TravelDataService();
+  final NotificationService _notificationService = NotificationService();
+
   bool _isSaving = false;
+  List<WeatherForecast>? _forecasts;
+  bool _isLoadingWeather = false;
+  List<FlightInfo> _flights = [];
+  List<HotelInfo> _hotels = [];
+  bool _isLoadingTravelData = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWeatherData();
+  }
+
+  Future<void> _loadWeatherData() async {
+    setState(() => _isLoadingWeather = true);
+    final forecasts = await _weatherService.getForecast(
+      widget.destination.name,
+      days: widget.days,
+    );
+    if (mounted) {
+      setState(() {
+        _forecasts = forecasts;
+        _isLoadingWeather = false;
+      });
+    }
+  }
 
   Future<void> _saveTrip() async {
     setState(() => _isSaving = true);
 
-    // Create new SavedTrip
+    // Create new SavedTrip with start date
     final trip = SavedTrip(
       id: const Uuid().v4(),
       destination: widget.destination,
@@ -51,12 +88,18 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
       days: widget.days,
       interests: widget.interests,
       createdAt: DateTime.now(),
-      // In a real app we'd serialize the itinerary too,
-      // but for now we're just saving the metadata
+      startDate:
+          DateTime.now().add(const Duration(days: 1)), // Default to tomorrow
       itinerary: null,
     );
 
     await _storageService.saveTrip(trip);
+
+    // Schedule notifications for itinerary
+    await _notificationService.scheduleItineraryNotifications(
+      trip,
+      widget.itinerary,
+    );
 
     if (mounted) {
       setState(() => _isSaving = false);
@@ -110,13 +153,22 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                   Theme.of(context).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
                 initiallyExpanded: index == 0,
-                title: Text(
-                  'Day ${day.dayNumber}',
-                  style: GoogleFonts.outfit(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                title: Row(
+                  children: [
+                    Text(
+                      'Day ${day.dayNumber}',
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (_forecasts != null && index < _forecasts!.length)
+                      WeatherDayWidget(
+                        forecast: _forecasts![index],
+                        isLoading: _isLoadingWeather,
+                      ),
+                  ],
                 ),
                 children: day.items.map((item) {
                   return ListTile(
@@ -162,26 +214,73 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _isSaving ? null : _saveTrip,
-        backgroundColor: Theme.of(context).primaryColor,
-        icon: _isSaving
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white),
-              )
-            : const Icon(Icons.bookmark, color: Colors.white),
-        label: Text(
-          _isSaving ? 'Saving...' : 'Save Trip',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.extended(
+            onPressed: _showTravelDataBottomSheet,
+            backgroundColor: const Color(0xFF2A2A2A),
+            icon: const Icon(Icons.flight, color: Colors.white),
+            label: Text(
+              'Flights & Hotels',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ),
-        ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            onPressed: _isSaving ? null : _saveTrip,
+            backgroundColor: Theme.of(context).primaryColor,
+            icon: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.bookmark, color: Colors.white),
+            label: Text(
+              _isSaving ? 'Saving...' : 'Save Trip',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Future<void> _showTravelDataBottomSheet() async {
+    setState(() => _isLoadingTravelData = true);
+
+    // Load travel data
+    final flights =
+        await _travelDataService.getFlights(widget.destination.name);
+    final hotels = await _travelDataService.getHotels(widget.destination.name);
+
+    if (mounted) {
+      setState(() {
+        _flights = flights;
+        _hotels = hotels;
+        _isLoadingTravelData = false;
+      });
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => TravelDataBottomSheet(
+          flights: _flights,
+          hotels: _hotels,
+          currency: widget.currency,
+          isLoading: _isLoadingTravelData,
+        ),
+      );
+    }
   }
 
   Widget _getIconForType(String type) {

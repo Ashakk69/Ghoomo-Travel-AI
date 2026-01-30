@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/saved_trip.dart';
 import '../models/user_persona.dart';
+import '../models/weather_data.dart';
 import '../services/trip_storage_service.dart';
+import '../services/weather_service.dart';
+import '../widgets/weather_badge.dart';
 import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -14,8 +17,10 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final TripStorageService _storageService = TripStorageService();
+  final WeatherService _weatherService = WeatherService();
   List<SavedTrip> _trips = [];
   Map<String, dynamic> _stats = {};
+  Map<String, WeatherData?> _weatherCache = {};
   bool _isLoading = true;
 
   @override
@@ -28,11 +33,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _isLoading = true);
     final trips = await _storageService.getAllTrips();
     final stats = await _storageService.getStatistics();
+
+    // Load weather for each trip
+    for (final trip in trips) {
+      _loadWeatherForTrip(trip);
+    }
+
     setState(() {
       _trips = trips;
       _stats = stats;
       _isLoading = false;
     });
+  }
+
+  Future<void> _loadWeatherForTrip(SavedTrip trip) async {
+    final weather =
+        await _weatherService.getCurrentWeather(trip.destination.name);
+    if (mounted) {
+      setState(() {
+        _weatherCache[trip.id] = weather;
+      });
+    }
   }
 
   Future<void> _deleteTrip(String tripId) async {
@@ -212,6 +233,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 fontSize: 12,
                 color: Colors.white38,
               ),
+            ),
+            const SizedBox(height: 8),
+            WeatherBadge(
+              weather: _weatherCache[trip.id],
+              isLoading: !_weatherCache.containsKey(trip.id),
             ),
             const SizedBox(height: 8),
             Wrap(
