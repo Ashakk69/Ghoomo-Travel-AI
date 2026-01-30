@@ -11,7 +11,8 @@ class AuthService {
   static const String _keyBiometricEmail = 'biometric_email';
   static const String _keyBiometricPassword = 'biometric_password';
 
-  final firebase_auth.FirebaseAuth _firebaseAuth =
+  // Lazy initialization of FirebaseAuth
+  firebase_auth.FirebaseAuth get _firebaseAuth =>
       firebase_auth.FirebaseAuth.instance;
   final FirestoreService _firestoreService = FirestoreService();
   final LocalAuthentication _localAuth = LocalAuthentication();
@@ -23,11 +24,21 @@ class AuthService {
   app_models.User? get currentUser => _currentUser;
 
   // Get Firebase user
-  firebase_auth.User? get firebaseUser => _firebaseAuth.currentUser;
+  firebase_auth.User? get firebaseUser {
+    try {
+      return _firebaseAuth.currentUser;
+    } catch (e) {
+      return null;
+    }
+  }
 
   // Check if user is logged in
   Future<bool> isLoggedIn() async {
-    return _firebaseAuth.currentUser != null;
+    try {
+      return _firebaseAuth.currentUser != null;
+    } catch (e) {
+      return false;
+    }
   }
 
   // Check if user has seen onboarding
@@ -64,6 +75,8 @@ class AuthService {
       debugPrint('Error loading user profile: $e');
     }
   }
+
+// ...
 
   // Sign up new user
   Future<AuthResult> signUp({
@@ -312,8 +325,13 @@ class AuthService {
   }
 
   // Listen to auth state changes
-  Stream<firebase_auth.User?> get authStateChanges =>
-      _firebaseAuth.authStateChanges();
+  Stream<firebase_auth.User?> get authStateChanges {
+    try {
+      return _firebaseAuth.authStateChanges();
+    } catch (e) {
+      return const Stream.empty();
+    }
+  }
 
   // Private helper methods
   bool _isValidEmail(String email) {

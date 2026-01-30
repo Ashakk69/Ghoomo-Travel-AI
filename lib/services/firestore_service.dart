@@ -4,7 +4,8 @@ import '../models/user.dart';
 import '../models/saved_trip.dart';
 
 class FirestoreService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  // Lazy initialization of Firestore
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
   // User Profile Operations
   Future<void> createUserProfile(User user) async {
@@ -141,23 +142,33 @@ class FirestoreService {
 
   // Stream for real-time updates
   Stream<List<SavedTrip>> getUserTripsStream(String userId) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('trips')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => SavedTrip.fromJson(doc.data()))
-            .whereType<SavedTrip>()
-            .toList());
+    try {
+      return _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('trips')
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snapshot) => snapshot.docs
+              .map((doc) => SavedTrip.fromJson(doc.data()))
+              .whereType<SavedTrip>()
+              .toList());
+    } catch (e) {
+      debugPrint('Error getting user trips stream: $e');
+      return const Stream.empty();
+    }
   }
 
   Stream<User?> getUserProfileStream(String userId) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .snapshots()
-        .map((doc) => doc.exists ? User.fromJson(doc.data()!) : null);
+    try {
+      return _firestore
+          .collection('users')
+          .doc(userId)
+          .snapshots()
+          .map((doc) => doc.exists ? User.fromJson(doc.data()!) : null);
+    } catch (e) {
+      debugPrint('Error getting user profile stream: $e');
+      return const Stream.empty();
+    }
   }
 }
