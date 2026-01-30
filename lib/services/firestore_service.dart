@@ -85,6 +85,7 @@ class FirestoreService {
 
       return snapshot.docs
           .map((doc) => SavedTrip.fromJson(doc.data()))
+          .whereType<SavedTrip>()
           .toList();
     } catch (e) {
       debugPrint('Error getting user trips: $e');
@@ -148,6 +149,7 @@ class FirestoreService {
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => SavedTrip.fromJson(doc.data()))
+            .whereType<SavedTrip>()
             .toList());
   }
 
