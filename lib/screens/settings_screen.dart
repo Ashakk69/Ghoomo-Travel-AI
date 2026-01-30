@@ -516,7 +516,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _showCurrencyPicker() async {
-    final currencies = Currency.supportedCurrencies;
+    final currencies = Currency.allCurrencies;
     final selected = await showDialog<Currency>(
       context: context,
       builder: (context) => AlertDialog(
