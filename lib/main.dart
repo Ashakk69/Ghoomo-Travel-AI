@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'services/notification_service.dart';
 import 'services/fcm_service.dart';
 import 'services/auth_service.dart';
@@ -14,6 +16,20 @@ void main() async {
 
   // Load environment variables
   await dotenv.load(fileName: ".env");
+
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+
+    // Configure Firestore with offline persistence
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+    debugPrint('App will continue without Firebase features');
+  }
 
   // Initialize notification service
   final notificationService = NotificationService();

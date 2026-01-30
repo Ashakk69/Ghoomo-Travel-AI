@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -80,6 +81,7 @@ class _LoginScreenState extends State<LoginScreen>
     final result = await _authService.login(
       email: _emailController.text,
       password: _passwordController.text,
+      rememberCredentials: _rememberMe,
     );
 
     if (!mounted) return;
@@ -96,14 +98,19 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleBiometricLogin() async {
-    final authenticated = await _authService.authenticateWithBiometrics();
-    if (authenticated && mounted) {
-      // In a real app, you'd retrieve stored credentials after biometric auth
-      // For now, just show a message
+    final result = await _authService.authenticateWithBiometrics();
+
+    if (!mounted) return;
+
+    if (result != null && result.success) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    } else if (result != null && result.error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Biometric authentication successful!'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: Text(result.error!),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -364,10 +371,9 @@ class _LoginScreenState extends State<LoginScreen>
     return Center(
       child: TextButton(
         onPressed: () {
-          // TODO: Implement forgot password
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Forgot password feature coming soon!')),
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
           );
         },
         child: Text(

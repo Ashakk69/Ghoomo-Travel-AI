@@ -29,6 +29,8 @@ dependencies:
   smooth_page_indicator: ^1.1.0
   flutter_svg: ^2.0.9
   package_info_plus: ^5.0.1
+  firebase_auth: ^4.16.0
+  cloud_firestore: ^4.14.0
 
 dev_dependencies:
   flutter_test:
