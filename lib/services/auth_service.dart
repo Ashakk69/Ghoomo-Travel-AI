@@ -44,9 +44,14 @@ class AuthService {
 
   // Initialize auth service - load current user if exists
   Future<void> initialize() async {
-    final firebaseUser = _firebaseAuth.currentUser;
-    if (firebaseUser != null) {
-      await _loadUserProfile(firebaseUser.uid);
+    try {
+      final firebaseUser = _firebaseAuth.currentUser;
+      if (firebaseUser != null) {
+        await _loadUserProfile(firebaseUser.uid);
+      }
+    } catch (e) {
+      debugPrint('Auth initialization skipped: Firebase not configured');
+      // App will continue without Firebase
     }
   }
 
