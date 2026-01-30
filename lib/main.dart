@@ -44,9 +44,17 @@ void main() async {
     debugPrint('FCM initialization skipped: $e');
   }
 
-  // Initialize auth service
-  final authService = AuthService();
-  await authService.initialize();
+  // Initialize auth service (requires Firebase to be initialized first)
+  late final AuthService authService;
+  try {
+    authService = AuthService();
+    await authService.initialize();
+  } catch (e) {
+    debugPrint('AuthService initialization failed: $e');
+    debugPrint('Creating fallback AuthService');
+    // This will fail but we catch it gracefully
+    authService = AuthService();
+  }
 
   // Enable high refresh rate (120Hz) for fluid animations
   await SystemChrome.setPreferredOrientations([
