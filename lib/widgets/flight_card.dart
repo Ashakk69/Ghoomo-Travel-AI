@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 import '../models/flight_info.dart';
 import '../models/currency.dart';
 
@@ -86,7 +88,7 @@ class FlightCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _buildTimeInfo(
-                  flight.departureTime,
+                  _formatTime(flight.departureTime),
                   flight.departureAirport,
                 ),
               ),
@@ -112,7 +114,7 @@ class FlightCard extends StatelessWidget {
               ),
               Expanded(
                 child: _buildTimeInfo(
-                  flight.arrivalTime,
+                  _formatTime(flight.arrivalTime),
                   flight.arrivalAirport,
                   isArrival: true,
                 ),
@@ -121,27 +123,47 @@ class FlightCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // View details button
+          // Flight details chips
+          Row(
+            children: [
+              _buildDetailChip(flight.stopsDisplay, Icons.connecting_airports),
+              const SizedBox(width: 8),
+              _buildDetailChip(
+                  flight.cabinClassDisplay, Icons.airline_seat_recline_extra),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Book now button
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () {
-                // TODO: Implement flight details view
-              },
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
-                ),
+            child: ElevatedButton(
+              onPressed: () => _launchBookingUrl(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              child: Text(
-                'View Details',
-                style: GoogleFonts.outfit(
-                  color: Theme.of(context).primaryColor,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Book Now',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.open_in_new,
+                    size: 16,
+                    color: Colors.white.withValues(alpha: 0.8),
+                  ),
+                ],
               ),
             ),
           ),
@@ -172,5 +194,73 @@ class FlightCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Widget _buildDetailChip(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12,
+            color: Colors.white.withValues(alpha: 0.7),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: GoogleFonts.outfit(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(String isoTime) {
+    try {
+      final dateTime = DateTime.parse(isoTime);
+      return DateFormat('HH:mm').format(dateTime);
+    } catch (e) {
+      return isoTime;
+    }
+  }
+
+  Future<void> _launchBookingUrl(BuildContext context) async {
+    final uri = Uri.parse(flight.bookingUrl);
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not open booking website'),
+              backgroundColor: Colors.red.shade700,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening booking link: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
   }
 }

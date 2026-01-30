@@ -36,18 +36,30 @@ class TravelDataService {
       final hours = 2 + _random.nextInt(10);
       final minutes = _random.nextInt(60);
 
+      final flightNumber =
+          '${airline.substring(0, 2).toUpperCase()}${100 + _random.nextInt(900)}';
+      final airportCode = _getAirportCode(destination);
+
       flights.add(FlightInfo(
         airline: airline,
-        flightNumber:
-            '${airline.substring(0, 2).toUpperCase()}${100 + _random.nextInt(900)}',
+        airlineCode: airline.substring(0, 2).toUpperCase(),
+        flightNumber: flightNumber,
         price: basePrice.toDouble(),
         duration: '${hours}h ${minutes}m',
-        departureTime:
-            '${8 + i}:${_random.nextInt(60).toString().padLeft(2, '0')} AM',
-        arrivalTime:
-            '${(8 + i + hours) % 24}:${_random.nextInt(60).toString().padLeft(2, '0')} ${(8 + i + hours) >= 12 ? 'PM' : 'AM'}',
+        departureTime: DateTime.now().add(Duration(days: i)).toIso8601String(),
+        arrivalTime: DateTime.now()
+            .add(Duration(days: i, hours: hours))
+            .toIso8601String(),
         departureAirport: 'DEL',
-        arrivalAirport: _getAirportCode(destination),
+        arrivalAirport: airportCode,
+        stops: _random.nextInt(3),
+        cabinClass: [
+          'ECONOMY',
+          'PREMIUM_ECONOMY',
+          'BUSINESS'
+        ][_random.nextInt(3)],
+        bookingUrl:
+            'https://www.skyscanner.com/transport/flights/del/$airportCode',
       ));
     }
 
@@ -99,12 +111,23 @@ class TravelDataService {
       final basePrice = 50 + _random.nextInt(450);
       final rating = 3.0 + (_random.nextDouble() * 2.0);
 
+      final hotelName = '$prefix $destination $suffix';
+
       hotels.add(HotelInfo(
-        name: '$prefix $destination $suffix',
+        id: 'hotel_${i}_${destination.toLowerCase().replaceAll(' ', '_')}',
+        name: hotelName,
         rating: double.parse(rating.toStringAsFixed(1)),
         pricePerNight: basePrice.toDouble(),
         location: '$destination City Center',
         amenities: amenitiesList[_random.nextInt(amenitiesList.length)],
+        hotelType: basePrice > 300
+            ? 'LUXURY'
+            : basePrice > 150
+                ? 'MID_RANGE'
+                : 'BUDGET',
+        distanceFromCenter: _random.nextDouble() * 5,
+        bookingUrl:
+            'https://www.booking.com/search.html?ss=${Uri.encodeComponent(destination)}',
       ));
     }
 

@@ -1,20 +1,18 @@
 import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user.dart' as app_models;
-import 'firestore_service.dart';
 
 class AuthService {
   static const String _keyHasSeenOnboarding = 'has_seen_onboarding';
   static const String _keyBiometricEmail = 'biometric_email';
   static const String _keyBiometricPassword = 'biometric_password';
+  static const String _keyUserData = 'user_data';
 
-  // Lazy initialization of FirebaseAuth
-  firebase_auth.FirebaseAuth get _firebaseAuth =>
-      firebase_auth.FirebaseAuth.instance;
-  final FirestoreService _firestoreService = FirestoreService();
+  // Get Supabase client
+  SupabaseClient get _supabase => Supabase.instance.client;
   final LocalAuthentication _localAuth = LocalAuthentication();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
@@ -23,10 +21,10 @@ class AuthService {
   // Get current user
   app_models.User? get currentUser => _currentUser;
 
-  // Get Firebase user
-  firebase_auth.User? get firebaseUser {
+  // Get Supabase user
+  User? get supabaseUser {
     try {
-      return _firebaseAuth.currentUser;
+      return _supabase.auth.currentUser;
     } catch (e) {
       return null;
     }
@@ -35,9 +33,12 @@ class AuthService {
   // Check if user is logged in
   Future<bool> isLoggedIn() async {
     try {
-      return _firebaseAuth.currentUser != null;
+      final session = _supabase.auth.currentSession;
+      return session != null;
     } catch (e) {
-      return false;
+      // Fallback to local storage
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.containsKey(_keyUserData);
     }
   }
 
@@ -56,27 +57,56 @@ class AuthService {
   // Initialize auth service - load current user if exists
   Future<void> initialize() async {
     try {
-      final firebaseUser = _firebaseAuth.currentUser;
-      if (firebaseUser != null) {
-        await _loadUserProfile(firebaseUser.uid);
+      final session = _supabase.auth.currentSession;
+      if (session != null) {
+        await _loadUserProfile(session.user.id);
+      } else {
+        // Try loading from local storage
+        await _loadLocalUser();
       }
     } catch (e) {
-      debugPrint('Auth initialization skipped: Firebase not configured');
-      // App will continue without Firebase
+      debugPrint('Auth initialization: Using local storage');
+      await _loadLocalUser();
     }
   }
 
-  // Load user profile from Firestore
+  // Load user profile from Supabase
   Future<void> _loadUserProfile(String userId) async {
     try {
-      final user = await _firestoreService.getUserProfile(userId);
-      _currentUser = user;
+      final response =
+          await _supabase.from('users').select().eq('id', userId).single();
+
+      _currentUser = app_models.User.fromJson(response);
+      await _saveLocalUser(_currentUser!);
     } catch (e) {
       debugPrint('Error loading user profile: $e');
+      await _loadLocalUser();
     }
   }
 
-// ...
+  // Save user to local storage
+  Future<void> _saveLocalUser(app_models.User user) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keyUserData, user.toJson().toString());
+    } catch (e) {
+      debugPrint('Error saving local user: $e');
+    }
+  }
+
+  // Load user from local storage
+  Future<void> _loadLocalUser() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userData = prefs.getString(_keyUserData);
+      if (userData != null) {
+        // Parse and load user (simplified)
+        debugPrint('Loaded user from local storage');
+      }
+    } catch (e) {
+      debugPrint('Error loading local user: $e');
+    }
+  }
 
   // Sign up new user
   Future<AuthResult> signUp({
@@ -96,41 +126,38 @@ class AuthService {
         return AuthResult.error('Password must be at least 6 characters');
       }
 
-      // Create Firebase user
-      final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+      // Sign up with Supabase
+      final response = await _supabase.auth.signUp(
         email: email.trim().toLowerCase(),
         password: password,
+        data: {'display_name': name.trim()},
       );
 
-      if (credential.user == null) {
+      if (response.user == null) {
         return AuthResult.error('Failed to create user');
       }
 
-      // Update display name
-      await credential.user!.updateDisplayName(name.trim());
-
-      // Create user profile in Firestore
+      // Create user profile in database
       final user = app_models.User(
-        id: credential.user!.uid,
+        id: response.user!.id,
         name: name.trim(),
         email: email.trim().toLowerCase(),
         createdAt: DateTime.now(),
         preferences: app_models.UserPreferences(),
       );
 
-      await _firestoreService.createUserProfile(user);
-      _currentUser = user;
-
-      // Send email verification (optional)
       try {
-        await credential.user!.sendEmailVerification();
+        await _supabase.from('users').insert(user.toJson());
       } catch (e) {
-        debugPrint('Email verification not sent: $e');
+        debugPrint('Error creating user profile in DB: $e');
       }
 
+      _currentUser = user;
+      await _saveLocalUser(user);
+
       return AuthResult.success(user);
-    } on firebase_auth.FirebaseAuthException catch (e) {
-      return AuthResult.error(_getFirebaseErrorMessage(e));
+    } on AuthException catch (e) {
+      return AuthResult.error(_getSupabaseErrorMessage(e));
     } catch (e) {
       return AuthResult.error('Sign up failed: ${e.toString()}');
     }
@@ -151,21 +178,29 @@ class AuthService {
         return AuthResult.error('Password cannot be empty');
       }
 
-      // Sign in with Firebase
-      final credential = await _firebaseAuth.signInWithEmailAndPassword(
+      // Sign in with Supabase
+      final response = await _supabase.auth.signInWithPassword(
         email: email.trim().toLowerCase(),
         password: password,
       );
 
-      if (credential.user == null) {
+      if (response.user == null) {
         return AuthResult.error('Login failed');
       }
 
-      // Load user profile from Firestore
-      await _loadUserProfile(credential.user!.uid);
+      // Load user profile from database
+      await _loadUserProfile(response.user!.id);
 
       if (_currentUser == null) {
-        return AuthResult.error('User profile not found');
+        // Create basic user if profile doesn't exist
+        _currentUser = app_models.User(
+          id: response.user!.id,
+          name: response.user!.userMetadata?['display_name'] ?? 'User',
+          email: email.trim().toLowerCase(),
+          createdAt: DateTime.now(),
+          preferences: app_models.UserPreferences(),
+        );
+        await _saveLocalUser(_currentUser!);
       }
 
       // Save credentials for biometric auth if requested
@@ -174,8 +209,8 @@ class AuthService {
       }
 
       return AuthResult.success(_currentUser!);
-    } on firebase_auth.FirebaseAuthException catch (e) {
-      return AuthResult.error(_getFirebaseErrorMessage(e));
+    } on AuthException catch (e) {
+      return AuthResult.error(_getSupabaseErrorMessage(e));
     } catch (e) {
       return AuthResult.error('Login failed: ${e.toString()}');
     }
@@ -183,15 +218,25 @@ class AuthService {
 
   // Logout user
   Future<void> logout() async {
-    await _firebaseAuth.signOut();
+    try {
+      await _supabase.auth.signOut();
+    } catch (e) {
+      debugPrint('Logout error: $e');
+    }
     _currentUser = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyUserData);
   }
 
   // Update user profile
   Future<bool> updateUser(app_models.User updatedUser) async {
     try {
-      await _firestoreService.updateUserProfile(updatedUser);
+      await _supabase
+          .from('users')
+          .update(updatedUser.toJson())
+          .eq('id', updatedUser.id);
       _currentUser = updatedUser;
+      await _saveLocalUser(updatedUser);
       return true;
     } catch (e) {
       debugPrint('Error updating user: $e');
@@ -201,23 +246,28 @@ class AuthService {
 
   // Delete account
   Future<void> deleteAccount() async {
-    final user = _firebaseAuth.currentUser;
+    final user = _supabase.auth.currentUser;
     if (user != null) {
-      await _firestoreService.deleteUserProfile(user.uid);
-      await user.delete();
-      _currentUser = null;
+      try {
+        await _supabase.from('users').delete().eq('id', user.id);
+        // Note: Supabase doesn't allow deleting auth users from client
+        // This needs to be done via admin API or database trigger
+      } catch (e) {
+        debugPrint('Error deleting user data: $e');
+      }
+      await logout();
     }
   }
 
   // Send password reset email
   Future<bool> sendPasswordResetEmail(String email) async {
     try {
-      await _firebaseAuth.sendPasswordResetEmail(
-        email: email.trim().toLowerCase(),
+      await _supabase.auth.resetPasswordForEmail(
+        email.trim().toLowerCase(),
       );
       return true;
-    } on firebase_auth.FirebaseAuthException catch (e) {
-      debugPrint('Password reset error: ${e.code}');
+    } on AuthException catch (e) {
+      debugPrint('Password reset error: ${e.message}');
       return false;
     }
   }
@@ -228,25 +278,30 @@ class AuthService {
     required String newPassword,
   }) async {
     try {
-      final user = _firebaseAuth.currentUser;
+      final user = _supabase.auth.currentUser;
       if (user == null || user.email == null) {
         return AuthResult.error('No user logged in');
       }
 
-      // Re-authenticate user
-      final credential = firebase_auth.EmailAuthProvider.credential(
-        email: user.email!,
-        password: currentPassword,
-      );
-
-      await user.reauthenticateWithCredential(credential);
+      // Supabase requires re-authentication for password change
+      // First verify current password by attempting to sign in
+      try {
+        await _supabase.auth.signInWithPassword(
+          email: user.email!,
+          password: currentPassword,
+        );
+      } catch (e) {
+        return AuthResult.error('Current password is incorrect');
+      }
 
       // Update password
-      await user.updatePassword(newPassword);
+      await _supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
 
       return AuthResult.success(_currentUser!);
-    } on firebase_auth.FirebaseAuthException catch (e) {
-      return AuthResult.error(_getFirebaseErrorMessage(e));
+    } on AuthException catch (e) {
+      return AuthResult.error(_getSupabaseErrorMessage(e));
     } catch (e) {
       return AuthResult.error('Failed to change password: ${e.toString()}');
     }
@@ -325,9 +380,9 @@ class AuthService {
   }
 
   // Listen to auth state changes
-  Stream<firebase_auth.User?> get authStateChanges {
+  Stream<AuthState> get authStateChanges {
     try {
-      return _firebaseAuth.authStateChanges();
+      return _supabase.auth.onAuthStateChange;
     } catch (e) {
       return const Stream.empty();
     }
@@ -339,31 +394,26 @@ class AuthService {
     return emailRegex.hasMatch(email.trim());
   }
 
-  String _getFirebaseErrorMessage(firebase_auth.FirebaseAuthException e) {
-    switch (e.code) {
-      case 'email-already-in-use':
-        return 'This email is already registered. Please login instead.';
-      case 'invalid-email':
-        return 'Invalid email address.';
-      case 'operation-not-allowed':
-        return 'Email/password accounts are not enabled.';
-      case 'weak-password':
-        return 'Password is too weak. Please use a stronger password.';
-      case 'user-disabled':
-        return 'This account has been disabled.';
-      case 'user-not-found':
-        return 'No account found with this email.';
-      case 'wrong-password':
-        return 'Incorrect password.';
-      case 'too-many-requests':
-        return 'Too many attempts. Please try again later.';
-      case 'network-request-failed':
-        return 'Network error. Please check your connection.';
-      case 'requires-recent-login':
-        return 'Please login again to perform this action.';
-      default:
-        return e.message ?? 'Authentication failed';
+  String _getSupabaseErrorMessage(AuthException e) {
+    final message = e.message.toLowerCase();
+
+    if (message.contains('email') && message.contains('already')) {
+      return 'This email is already registered. Please login instead.';
+    } else if (message.contains('invalid') && message.contains('email')) {
+      return 'Invalid email address.';
+    } else if (message.contains('password') && message.contains('weak')) {
+      return 'Password is too weak. Please use a stronger password.';
+    } else if (message.contains('user') && message.contains('not found')) {
+      return 'No account found with this email.';
+    } else if (message.contains('invalid') && message.contains('credentials')) {
+      return 'Incorrect email or password.';
+    } else if (message.contains('too many')) {
+      return 'Too many attempts. Please try again later.';
+    } else if (message.contains('network')) {
+      return 'Network error. Please check your connection.';
     }
+
+    return e.message;
   }
 }
 

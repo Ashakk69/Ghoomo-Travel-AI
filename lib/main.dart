@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/notification_service.dart';
-import 'services/fcm_service.dart';
 import 'services/auth_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
@@ -17,18 +14,17 @@ void main() async {
   // Load environment variables
   await dotenv.load(fileName: ".env");
 
-  // Initialize Firebase
+  // Initialize Supabase
   try {
-    await Firebase.initializeApp();
-
-    // Configure Firestore with offline persistence
-    FirebaseFirestore.instance.settings = const Settings(
-      persistenceEnabled: true,
-      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    await Supabase.initialize(
+      url: dotenv.env['SUPABASE_URL'] ?? '',
+      anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
+      debug: true, // Enable debug logs during development
     );
+    debugPrint('✅ Supabase initialized successfully');
   } catch (e) {
-    debugPrint('Firebase initialization error: $e');
-    debugPrint('App will continue without Firebase features');
+    debugPrint('⚠️ Supabase initialization error: $e');
+    debugPrint('App will continue with local storage only');
   }
 
   // Initialize notification service
@@ -36,34 +32,17 @@ void main() async {
   await notificationService.initialize();
   await notificationService.requestPermissions();
 
-  // Initialize FCM service (will fail gracefully if Firebase not configured)
-  try {
-    final fcmService = FCMService();
-    await fcmService.initialize();
-  } catch (e) {
-    debugPrint('FCM initialization skipped: $e');
-  }
-
-  // Initialize auth service (requires Firebase to be initialized first)
+  // Initialize auth service
   late final AuthService authService;
   try {
     authService = AuthService();
     await authService.initialize();
+    debugPrint('✅ AuthService initialized successfully');
   } catch (e) {
-    debugPrint('AuthService initialization failed: $e');
+    debugPrint('⚠️ AuthService initialization failed: $e');
     debugPrint('Creating fallback AuthService');
-    // This will fail but we catch it gracefully
     authService = AuthService();
   }
-
-  // Enable high refresh rate (120Hz) for fluid animations
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  // Enable high refresh rate mode
-  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
   runApp(TravelPlannerApp(authService: authService));
 }
