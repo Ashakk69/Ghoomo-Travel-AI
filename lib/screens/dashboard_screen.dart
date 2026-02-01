@@ -6,6 +6,7 @@ import '../models/weather_data.dart';
 import '../services/trip_storage_service.dart';
 import '../services/weather_service.dart';
 import '../widgets/weather_badge.dart';
+import '../utils/theme_constants.dart';
 import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -64,12 +65,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: GhoomoColors.backgroundDark,
       appBar: AppBar(
         title: Text(
           'My Trips',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontFamily: 'Space Grotesk',
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: GhoomoColors.backgroundDark,
         elevation: 0,
       ),
       body: _isLoading
@@ -120,12 +125,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).primaryColor.withValues(alpha: 0.3),
-            Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            GhoomoColors.primary.withOpacity(0.3),
+            GhoomoColors.primary.withOpacity(0.1),
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white12),
+        borderRadius: BorderRadius.circular(GhoomoRadius.large),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -193,9 +198,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2A2A2A),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white12),
+        color: GhoomoColors.surfaceDark,
+        borderRadius: BorderRadius.circular(GhoomoRadius.large),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),

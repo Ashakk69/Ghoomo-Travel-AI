@@ -59,18 +59,27 @@ class TravelPlannerApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0F0F0F), // Deep black-grey
-        primaryColor: const Color(0xFF6C63FF), // Premium purple accent
+        scaffoldBackgroundColor: const Color(0xFF221E10), // Ghoomo warm dark
+        primaryColor: const Color(0xFFF2B90D), // Ghoomo golden yellow
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF6C63FF),
-          secondary: Color(0xFF00E5FF), // Cyan accent
-          surface: Color(0xFF1E1E1E),
+          primary: Color(0xFFF2B90D),
+          secondary: Color(0xFFE0A800),
+          surface: Color(0xFF2C2819),
+          background: Color(0xFF221E10),
         ),
-        textTheme: GoogleFonts.outfitTextTheme(
+        textTheme: GoogleFonts.spaceGroteskTextTheme(
           Theme.of(context).textTheme.apply(
                 bodyColor: Colors.white,
                 displayColor: Colors.white,
               ),
+        ),
+        cardTheme: CardThemeData(
+          color: const Color(0xFF2C2819),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: Colors.white.withOpacity(0.05)),
+          ),
         ),
         useMaterial3: true,
       ),

@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/user.dart';
 import '../models/currency.dart';
 import '../services/auth_service.dart';
 import '../services/preferences_service.dart';
 import '../services/trip_storage_service.dart';
+import '../services/cache_service.dart';
 import 'login_screen.dart';
+import 'edit_profile_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'terms_of_service_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -19,10 +24,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final AuthService _authService = AuthService();
   final PreferencesService _preferencesService = PreferencesService();
   final TripStorageService _tripStorage = TripStorageService();
+  final CacheService _cacheService = CacheService();
 
   User? _currentUser;
   UserPreferences? _preferences;
   String _appVersion = '';
+  String _cacheSize = 'Calculating...';
   bool _isLoading = true;
 
   @override
@@ -42,6 +49,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _appVersion = '${packageInfo.version} (${packageInfo.buildNumber})';
     } catch (e) {
       _appVersion = '1.0.0';
+    }
+
+    // Load cache size
+    try {
+      await _cacheService.estimateCacheSize();
+      final size = await _cacheService.getCacheSize();
+      _cacheSize = _cacheService.formatCacheSize(size);
+    } catch (e) {
+      _cacheSize = 'Unknown';
     }
 
     setState(() => _isLoading = false);
@@ -143,7 +159,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           style: GoogleFonts.outfit(color: Colors.white),
         ),
         content: Text(
-          'This will clear all cached data. Your trips will not be affected.',
+          'This will clear all cached data ($_cacheSize). Your trips will not be affected.',
           style: GoogleFonts.outfit(color: Colors.white70),
         ),
         actions: [
@@ -166,16 +182,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (confirmed == true && mounted) {
-      // Clear cache logic here
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Cache cleared successfully',
-            style: GoogleFonts.outfit(),
+      setState(() => _isLoading = true);
+
+      final success = await _cacheService.clearAllCaches();
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? 'Cache cleared successfully' : 'Failed to clear cache',
+              style: GoogleFonts.outfit(),
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
           ),
-          backgroundColor: Colors.green,
-        ),
-      );
+        );
+
+        if (success) {
+          _loadData(); // Reload to update cache size
+        }
+      }
     }
   }
 
@@ -265,12 +292,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           IconButton(
-            onPressed: () {
-              // TODO: Edit profile
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Edit profile feature coming soon!')),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
               );
+              // Reload data after returning from edit profile
+              _loadData();
             },
             icon: const Icon(Icons.edit, color: Colors.white54),
           ),
@@ -353,11 +381,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12),
       ),
       trailing: const Icon(Icons.chevron_right, color: Colors.white54),
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Theme selection coming soon!')),
-        );
-      },
+      onTap: () => _showThemePicker(),
     );
   }
 
@@ -380,7 +404,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildListTile(
             icon: Icons.cleaning_services,
             title: 'Clear Cache',
-            subtitle: 'Free up storage space',
+            subtitle: 'Free up storage space ($_cacheSize)',
             onTap: _handleClearCache,
           ),
           const Divider(color: Colors.white12, height: 1),
@@ -423,8 +447,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.privacy_tip,
             title: 'Privacy Policy',
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Privacy policy coming soon!')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
               );
             },
           ),
@@ -433,8 +458,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.description,
             title: 'Terms of Service',
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Terms of service coming soon!')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TermsOfServiceScreen()),
               );
             },
           ),
@@ -442,11 +468,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildListTile(
             icon: Icons.star,
             title: 'Rate App',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Rate app feature coming soon!')),
-              );
-            },
+            onTap: _handleRateApp,
           ),
         ]),
       ],
@@ -513,6 +535,134 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _showThemePicker() async {
+    final themes = ['Dark', 'Light', 'System'];
+    final currentTheme = _preferences?.theme ?? 'dark';
+
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2A2A2A),
+        title: Text(
+          'Select Theme',
+          style: GoogleFonts.outfit(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: themes.map((theme) {
+            final isSelected =
+                theme.toLowerCase() == currentTheme.toLowerCase();
+            return ListTile(
+              title: Text(
+                theme,
+                style: GoogleFonts.outfit(
+                  color: isSelected ? const Color(0xFF6C63FF) : Colors.white,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              leading: Icon(
+                isSelected ? Icons.check_circle : Icons.circle_outlined,
+                color: isSelected ? const Color(0xFF6C63FF) : Colors.white54,
+              ),
+              onTap: () => Navigator.pop(context, theme.toLowerCase()),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+
+    if (selected != null) {
+      await _preferencesService.updateTheme(selected);
+      _loadData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Theme will be applied in future updates',
+              style: GoogleFonts.outfit(),
+            ),
+            backgroundColor: const Color(0xFF6C63FF),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleRateApp() async {
+    const playStoreUrl =
+        'https://play.google.com/store/apps/details?id=com.ghoomo.travel_planner';
+    const appStoreUrl =
+        'https://apps.apple.com/app/ghoomo-travel-planner/id123456789';
+
+    // For Android, use Play Store URL; for iOS, use App Store URL
+    // In a real app, you'd detect the platform
+    final url = playStoreUrl;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2A2A2A),
+        title: Text(
+          'Rate Ghoomo',
+          style: GoogleFonts.outfit(color: Colors.white),
+        ),
+        content: Text(
+          'Enjoying Ghoomo? Please take a moment to rate us on the app store!',
+          style: GoogleFonts.outfit(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Later',
+              style: GoogleFonts.outfit(color: Colors.white54),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Rate Now',
+              style: GoogleFonts.outfit(color: const Color(0xFF6C63FF)),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Could not open app store',
+                  style: GoogleFonts.outfit(),
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Error opening app store: $e',
+                style: GoogleFonts.outfit(),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _showCurrencyPicker() async {

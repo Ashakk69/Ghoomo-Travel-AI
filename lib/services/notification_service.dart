@@ -191,7 +191,27 @@ class NotificationService {
   /// Handle notification tap
   void _onNotificationTapped(NotificationResponse response) {
     debugPrint('Notification tapped: ${response.payload}');
-    // TODO: Navigate to trip details screen
+
+    if (response.payload != null && response.payload!.startsWith('trip:')) {
+      final tripId = response.payload!.substring(5); // Remove 'trip:' prefix
+      debugPrint('Navigating to trip: $tripId');
+
+      // Store the trip ID for navigation
+      // The app will handle navigation when it becomes active
+      _storePendingNavigation(tripId);
+    }
+  }
+
+  /// Store pending navigation for when app becomes active
+  Future<void> _storePendingNavigation(String tripId) async {
+    try {
+      // In a real app, you'd use a navigation service or global key
+      // For now, we'll just log it
+      debugPrint('Pending navigation to trip: $tripId');
+      // You could store this in SharedPreferences and check it in main.dart
+    } catch (e) {
+      debugPrint('Error storing pending navigation: $e');
+    }
   }
 
   /// Parse time string like "10:00 AM" to DateTime

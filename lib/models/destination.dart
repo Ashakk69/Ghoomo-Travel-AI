@@ -5,6 +5,8 @@ class Destination {
   final String imageAsset;
   final double rating;
   final String description;
+  final int estimatedCost;
+  final String category;
 
   const Destination({
     required this.id,
@@ -13,6 +15,8 @@ class Destination {
     required this.imageAsset,
     required this.rating,
     required this.description,
+    this.estimatedCost = 1000,
+    this.category = 'Adventure',
   });
 
   static List<Destination> get mockDestinations => [
@@ -24,6 +28,8 @@ class Destination {
           rating: 4.9,
           description:
               'Experience the ancient temples and vibrant seasons of Japan\'s cultural capital.',
+          estimatedCost: 1200,
+          category: 'Culture',
         ),
         const Destination(
           id: '2',
@@ -51,6 +57,8 @@ class Destination {
           rating: 4.7,
           description:
               'Tropical paradise featuring lush jungles, serene beaches, and rich spiritual culture.',
+          estimatedCost: 800,
+          category: 'Nature',
         ),
         const Destination(
           id: '5',
@@ -69,6 +77,8 @@ class Destination {
           rating: 4.9,
           description:
               'The City of Light, home to the Eiffel Tower, world-class art, and romantic ambiance.',
+          estimatedCost: 1500,
+          category: 'Romance',
         ),
         const Destination(
           id: '7',
