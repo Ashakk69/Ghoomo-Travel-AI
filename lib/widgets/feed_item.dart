@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/destination.dart';
 import '../utils/theme_constants.dart';
 import '../services/preferences_service.dart';
+import '../services/share_service.dart';
 import 'ai_badge.dart';
+import 'comments_sheet.dart';
 
 class FeedItem extends StatefulWidget {
   final Destination destination;
@@ -369,30 +371,48 @@ class _FeedItemState extends State<FeedItem> {
           const SizedBox(width: 24),
 
           // Comment button
-          Row(
-            children: [
-              const Icon(
-                Icons.chat_bubble_outline,
-                color: Colors.grey,
-                size: 24,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                _formatCount(48),
-                style: GhoomoTextStyles.caption.copyWith(
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w500,
+          GestureDetector(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                isScrollControlled: true,
+                builder: (context) => Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: CommentsSheet(destination: widget.destination),
                 ),
-              ),
-            ],
+              );
+            },
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.chat_bubble_outline,
+                  color: Colors.grey,
+                  size: 24,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _formatCount(48),
+                  style: GhoomoTextStyles.caption.copyWith(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(width: 24),
 
           // Share button
-          const Icon(
-            Icons.share_outlined,
-            color: Colors.grey,
-            size: 24,
+          IconButton(
+            onPressed: () => ShareService.shareDestination(widget.destination),
+            icon: const Icon(
+              Icons.share_outlined,
+              color: Colors.grey,
+              size: 24,
+            ),
           ),
 
           const Spacer(),

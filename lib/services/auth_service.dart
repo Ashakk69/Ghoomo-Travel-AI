@@ -6,6 +6,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user.dart' as app_models;
 
 class AuthService {
+  static final AuthService _instance = AuthService._internal();
+
+  factory AuthService() => _instance;
+
+  AuthService._internal();
+
   static const String _keyHasSeenOnboarding = 'has_seen_onboarding';
   static const String _keyBiometricEmail = 'biometric_email';
   static const String _keyBiometricPassword = 'biometric_password';
