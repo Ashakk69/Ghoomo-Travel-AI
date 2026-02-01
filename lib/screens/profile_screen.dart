@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../utils/theme_constants.dart';
 import '../services/preferences_service.dart';
 import 'settings_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -15,6 +16,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, bool> _travelStyles = {};
   Map<String, bool> _aiSettings = {};
   bool _isLoading = true;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -36,10 +38,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _savePreferences() async {
+    setState(() => _isSaving = true);
+
     final stylesSuccess = await _prefsService.saveTravelStyles(_travelStyles);
     final settingsSuccess = await _prefsService.saveAISettings(_aiSettings);
 
     if (mounted) {
+      setState(() => _isSaving = false);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -170,20 +176,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Positioned(
                 bottom: 0,
                 right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: GhoomoColors.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: GhoomoColors.backgroundDark,
-                      width: 4,
+                child: GestureDetector(
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const EditProfileScreen()),
+                    );
+                    // Reload preferences/user data when returning
+                    _loadPreferences();
+                    setState(
+                        () {}); // Trigger rebuild to update name/avatar if changed
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: GhoomoColors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: GhoomoColors.backgroundDark,
+                        width: 4,
+                      ),
                     ),
-                  ),
-                  child: const Icon(
-                    Icons.edit,
-                    size: 16,
-                    color: GhoomoColors.accent,
+                    child: const Icon(
+                      Icons.edit,
+                      size: 16,
+                      color: GhoomoColors.accent,
+                    ),
                   ),
                 ),
               ),
@@ -449,7 +468,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         width: double.infinity,
         height: 56,
         child: ElevatedButton(
-          onPressed: _savePreferences,
+          onPressed: _isSaving ? null : _savePreferences,
           style: ElevatedButton.styleFrom(
             backgroundColor: GhoomoColors.primary,
             foregroundColor: GhoomoColors.accent,
@@ -458,12 +477,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               borderRadius: BorderRadius.circular(GhoomoRadius.full),
             ),
           ),
-          child: Text(
-            'Save Preferences',
-            style: GhoomoTextStyles.button.copyWith(
-              color: GhoomoColors.accent,
-            ),
-          ),
+          child: _isSaving
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(GhoomoColors.accent),
+                  ),
+                )
+              : Text(
+                  'Save Preferences',
+                  style: GhoomoTextStyles.button.copyWith(
+                    color: GhoomoColors.accent,
+                  ),
+                ),
         ),
       ),
     );
