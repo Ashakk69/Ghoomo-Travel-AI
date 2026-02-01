@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -34,7 +35,7 @@ class HotelService {
     }
 
     if (!isConfigured) {
-      print('⚠️ Amadeus API not configured, using mock data');
+      debugPrint('⚠️ Amadeus API not configured, using mock data');
       return null;
     }
 
@@ -56,11 +57,11 @@ class HotelService {
         _tokenExpiry = DateTime.now().add(Duration(seconds: expiresIn - 60));
         return _accessToken;
       } else {
-        print('❌ Failed to get Amadeus token: ${response.statusCode}');
+        debugPrint('❌ Failed to get Amadeus token: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Error getting Amadeus token: $e');
+      debugPrint('❌ Error getting Amadeus token: $e');
       return null;
     }
   }
@@ -70,7 +71,7 @@ class HotelService {
     // Try cache first
     final cachedHotels = await _getCachedHotels(params);
     if (cachedHotels != null) {
-      print('✅ Returning cached hotel results');
+      debugPrint('✅ Returning cached hotel results');
       return cachedHotels;
     }
 
@@ -85,7 +86,7 @@ class HotelService {
     }
 
     // Fallback to mock data
-    print('⚠️ Using mock hotel data');
+    debugPrint('⚠️ Using mock hotel data');
     return _generateMockHotels(params);
   }
 
@@ -96,7 +97,7 @@ class HotelService {
       // First, get hotel IDs by city
       final cityCode = await _getCityCode(params.destination, token);
       if (cityCode == null) {
-        print('⚠️ Could not find city code for ${params.destination}');
+        debugPrint('⚠️ Could not find city code for ${params.destination}');
         return null;
       }
 
@@ -132,11 +133,12 @@ class HotelService {
             .toList();
         return _applyFilters(hotels, params);
       } else {
-        print('❌ Amadeus API error: ${response.statusCode} - ${response.body}');
+        debugPrint(
+            '❌ Amadeus API error: ${response.statusCode} - ${response.body}');
         return null;
       }
     } catch (e) {
-      print('❌ Error fetching hotels from API: $e');
+      debugPrint('❌ Error fetching hotels from API: $e');
       return null;
     }
   }
@@ -337,7 +339,7 @@ class HotelService {
       };
       await prefs.setString(cacheKey, json.encode(cacheData));
     } catch (e) {
-      print('⚠️ Failed to cache hotels: $e');
+      debugPrint('⚠️ Failed to cache hotels: $e');
     }
   }
 
@@ -361,7 +363,7 @@ class HotelService {
       final hotelsList = cacheData['hotels'] as List<dynamic>;
       return hotelsList.map((h) => HotelInfo.fromJson(h)).toList();
     } catch (e) {
-      print('⚠️ Failed to read cached hotels: $e');
+      debugPrint('⚠️ Failed to read cached hotels: $e');
       return null;
     }
   }

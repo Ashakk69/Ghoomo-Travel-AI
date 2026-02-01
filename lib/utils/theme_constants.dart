@@ -16,6 +16,7 @@ class GhoomoColors {
   static const Color surfaceDark =
       Color(0xFF2C2819); // Slightly lighter for cards
   static const Color surfaceLight = Color(0xFF393528); // For hover states
+  static const Color surface = surfaceDark;
 
   // Accent Colors
   static const Color accent = Color(0xFF181611); // Deep dark accent
@@ -53,7 +54,7 @@ class GhoomoSpacing {
 class GhoomoShadows {
   static List<BoxShadow> get small => [
         BoxShadow(
-          color: Colors.black.withOpacity(0.1),
+          color: Colors.black.withValues(alpha: 0.1),
           blurRadius: 4,
           offset: const Offset(0, 2),
         ),
@@ -61,7 +62,7 @@ class GhoomoShadows {
 
   static List<BoxShadow> get medium => [
         BoxShadow(
-          color: Colors.black.withOpacity(0.15),
+          color: Colors.black.withValues(alpha: 0.15),
           blurRadius: 8,
           offset: const Offset(0, 4),
         ),
@@ -69,7 +70,7 @@ class GhoomoShadows {
 
   static List<BoxShadow> get large => [
         BoxShadow(
-          color: Colors.black.withOpacity(0.2),
+          color: Colors.black.withValues(alpha: 0.2),
           blurRadius: 16,
           offset: const Offset(0, 8),
         ),
@@ -77,7 +78,7 @@ class GhoomoShadows {
 
   static List<BoxShadow> get primaryGlow => [
         BoxShadow(
-          color: GhoomoColors.primary.withOpacity(0.3),
+          color: GhoomoColors.primary.withValues(alpha: 0.3),
           blurRadius: 20,
           offset: const Offset(0, 8),
         ),

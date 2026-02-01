@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -34,7 +35,7 @@ class FlightService {
     }
 
     if (!isConfigured) {
-      print('⚠️ Amadeus API not configured, using mock data');
+      debugPrint('⚠️ Amadeus API not configured, using mock data');
       return null;
     }
 
@@ -57,11 +58,11 @@ class FlightService {
             DateTime.now().add(Duration(seconds: expiresIn - 60)); // 60s buffer
         return _accessToken;
       } else {
-        print('❌ Failed to get Amadeus token: ${response.statusCode}');
+        debugPrint('❌ Failed to get Amadeus token: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Error getting Amadeus token: $e');
+      debugPrint('❌ Error getting Amadeus token: $e');
       return null;
     }
   }
@@ -71,7 +72,7 @@ class FlightService {
     // Try cache first
     final cachedFlights = await _getCachedFlights(params);
     if (cachedFlights != null) {
-      print('✅ Returning cached flight results');
+      debugPrint('✅ Returning cached flight results');
       return cachedFlights;
     }
 
@@ -86,7 +87,7 @@ class FlightService {
     }
 
     // Fallback to mock data
-    print('⚠️ Using mock flight data');
+    debugPrint('⚠️ Using mock flight data');
     return _generateMockFlights(params);
   }
 
@@ -128,11 +129,12 @@ class FlightService {
             offers.map((offer) => _parseAmadeusOffer(offer)).toList();
         return _applyFilters(flights, params);
       } else {
-        print('❌ Amadeus API error: ${response.statusCode} - ${response.body}');
+        debugPrint(
+            '❌ Amadeus API error: ${response.statusCode} - ${response.body}');
         return null;
       }
     } catch (e) {
-      print('❌ Error fetching flights from API: $e');
+      debugPrint('❌ Error fetching flights from API: $e');
       return null;
     }
   }
@@ -299,7 +301,7 @@ class FlightService {
       };
       await prefs.setString(cacheKey, json.encode(cacheData));
     } catch (e) {
-      print('⚠️ Failed to cache flights: $e');
+      debugPrint('⚠️ Failed to cache flights: $e');
     }
   }
 
@@ -323,7 +325,7 @@ class FlightService {
       final flightsList = cacheData['flights'] as List<dynamic>;
       return flightsList.map((f) => FlightInfo.fromJson(f)).toList();
     } catch (e) {
-      print('⚠️ Failed to read cached flights: $e');
+      debugPrint('⚠️ Failed to read cached flights: $e');
       return null;
     }
   }

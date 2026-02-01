@@ -15,10 +15,10 @@ class BottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF181611).withOpacity(0.95),
+        color: const Color(0xFF181611).withValues(alpha: 0.95),
         border: Border(
           top: BorderSide(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             width: 1,
           ),
         ),

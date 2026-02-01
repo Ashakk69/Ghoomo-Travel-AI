@@ -7,6 +7,7 @@ import 'services/auth_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'widgets/app_lock_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,49 +55,50 @@ class TravelPlannerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Travel AI',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF221E10), // Ghoomo warm dark
-        primaryColor: const Color(0xFFF2B90D), // Ghoomo golden yellow
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFF2B90D),
-          secondary: Color(0xFFE0A800),
-          surface: Color(0xFF2C2819),
-          background: Color(0xFF221E10),
-        ),
-        textTheme: GoogleFonts.spaceGroteskTextTheme(
-          Theme.of(context).textTheme.apply(
-                bodyColor: Colors.white,
-                displayColor: Colors.white,
-              ),
-        ),
-        cardTheme: CardThemeData(
-          color: const Color(0xFF2C2819),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.white.withOpacity(0.05)),
+    return AppLockWrapper(
+      child: MaterialApp(
+        title: 'Travel AI',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor: const Color(0xFF221E10), // Ghoomo warm dark
+          primaryColor: const Color(0xFFF2B90D), // Ghoomo golden yellow
+          colorScheme: const ColorScheme.dark(
+            primary: Color(0xFFF2B90D),
+            secondary: Color(0xFFE0A800),
+            surface: Color(0xFF2C2819),
           ),
-        ),
-        useMaterial3: true,
-      ),
-      home: FutureBuilder<Widget>(
-        future: _determineInitialScreen(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF6C63FF),
+          textTheme: GoogleFonts.spaceGroteskTextTheme(
+            Theme.of(context).textTheme.apply(
+                  bodyColor: Colors.white,
+                  displayColor: Colors.white,
                 ),
-              ),
-            );
-          }
-          return snapshot.data ?? const LoginScreen();
-        },
+          ),
+          cardTheme: CardThemeData(
+            color: const Color(0xFF2C2819),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+          ),
+          useMaterial3: true,
+        ),
+        home: FutureBuilder<Widget>(
+          future: _determineInitialScreen(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF6C63FF),
+                  ),
+                ),
+              );
+            }
+            return snapshot.data ?? const LoginScreen();
+          },
+        ),
       ),
     );
   }

@@ -13,9 +13,9 @@ class OnboardingScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
+            colors: const [
               GhoomoColors.primary,
-              const Color(0xFFFFBF00), // Brighter yellow
+              Color(0xFFFFBF00), // Brighter yellow
             ],
           ),
         ),
@@ -41,7 +41,7 @@ class OnboardingScreen extends StatelessWidget {
                             right: 40,
                             child: Icon(
                               Icons.auto_awesome,
-                              color: GhoomoColors.accent.withOpacity(0.8),
+                              color: GhoomoColors.accent.withValues(alpha: 0.8),
                               size: 40,
                             ),
                           ),
@@ -50,7 +50,7 @@ class OnboardingScreen extends StatelessWidget {
                             left: 30,
                             child: Icon(
                               Icons.star,
-                              color: GhoomoColors.accent.withOpacity(0.6),
+                              color: GhoomoColors.accent.withValues(alpha: 0.6),
                               size: 24,
                             ),
                           ),
@@ -67,13 +67,14 @@ class OnboardingScreen extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(48),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.2),
+                                      color:
+                                          Colors.black.withValues(alpha: 0.2),
                                       blurRadius: 30,
                                       offset: const Offset(0, 15),
                                     ),
                                   ],
                                   border: Border.all(
-                                    color: Colors.black.withOpacity(0.05),
+                                    color: Colors.black.withValues(alpha: 0.05),
                                     width: 4,
                                   ),
                                 ),
@@ -85,7 +86,8 @@ class OnboardingScreen extends StatelessWidget {
                                         begin: Alignment.topCenter,
                                         end: Alignment.bottomCenter,
                                         colors: [
-                                          GhoomoColors.primary.withOpacity(0.4),
+                                          GhoomoColors.primary
+                                              .withValues(alpha: 0.4),
                                           Colors.transparent,
                                         ],
                                       ),
@@ -93,8 +95,8 @@ class OnboardingScreen extends StatelessWidget {
                                     child: Icon(
                                       Icons.flight_takeoff,
                                       size: 120,
-                                      color:
-                                          GhoomoColors.accent.withOpacity(0.3),
+                                      color: GhoomoColors.accent
+                                          .withValues(alpha: 0.3),
                                     ),
                                   ),
                                 ),
@@ -117,11 +119,12 @@ class OnboardingScreen extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: GhoomoColors.accent.withOpacity(0.1),
+                              color: GhoomoColors.accent.withValues(alpha: 0.1),
                               borderRadius:
                                   BorderRadius.circular(GhoomoRadius.full),
                               border: Border.all(
-                                color: GhoomoColors.accent.withOpacity(0.05),
+                                color:
+                                    GhoomoColors.accent.withValues(alpha: 0.05),
                                 width: 1,
                               ),
                             ),
@@ -160,7 +163,7 @@ class OnboardingScreen extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: GhoomoTextStyles.fontFamily,
                               fontSize: 18,
-                              color: GhoomoColors.accent.withOpacity(0.8),
+                              color: GhoomoColors.accent.withValues(alpha: 0.8),
                               height: 1.5,
                             ),
                           ),
@@ -183,7 +186,8 @@ class OnboardingScreen extends StatelessWidget {
                                 backgroundColor: GhoomoColors.accent,
                                 foregroundColor: GhoomoColors.primary,
                                 elevation: 8,
-                                shadowColor: Colors.black.withOpacity(0.3),
+                                shadowColor:
+                                    Colors.black.withValues(alpha: 0.3),
                                 shape: RoundedRectangleBorder(
                                   borderRadius:
                                       BorderRadius.circular(GhoomoRadius.full),
@@ -228,7 +232,8 @@ class OnboardingScreen extends StatelessWidget {
                                 fontFamily: GhoomoTextStyles.fontFamily,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: GhoomoColors.accent.withOpacity(0.8),
+                                color:
+                                    GhoomoColors.accent.withValues(alpha: 0.8),
                                 decoration: TextDecoration.underline,
                                 decorationThickness: 2,
                               ),

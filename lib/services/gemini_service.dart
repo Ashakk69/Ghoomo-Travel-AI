@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/destination.dart';
@@ -56,7 +57,7 @@ class GeminiService {
       // Parse the JSON response
       return _parseItinerary(text);
     } catch (e) {
-      print('Error generating trip: $e');
+      debugPrint('Error generating trip: $e');
       // Return fallback itinerary on error
       return _generateFallbackItinerary(destination, days, budgetUSD);
     }
@@ -158,8 +159,8 @@ Make it authentic and exciting for a ${persona.displayName}!
         return DayPlan(dayNumber, activities);
       }).toList();
     } catch (e) {
-      print('Error parsing itinerary JSON: $e');
-      print('JSON text: $jsonText');
+      debugPrint('Error parsing itinerary JSON: $e');
+      debugPrint('JSON text: $jsonText');
       throw Exception('Failed to parse AI response');
     }
   }

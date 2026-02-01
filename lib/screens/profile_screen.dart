@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/theme_constants.dart';
 import '../services/preferences_service.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -117,7 +118,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           IconButton(
             onPressed: () {
-              // Settings
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
             },
             icon: const Icon(Icons.settings),
             color: Colors.white,
@@ -146,7 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: GhoomoColors.primary.withOpacity(0.2),
+                      color: GhoomoColors.primary.withValues(alpha: 0.2),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -280,7 +284,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     boxShadow: entry.value
                         ? [
                             BoxShadow(
-                              color: GhoomoColors.primary.withOpacity(0.2),
+                              color:
+                                  GhoomoColors.primary.withValues(alpha: 0.2),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),
@@ -336,8 +341,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      GhoomoColors.primary.withOpacity(0.8),
-                      Colors.orange.withOpacity(0.8),
+                      GhoomoColors.primary.withValues(alpha: 0.8),
+                      Colors.orange.withValues(alpha: 0.8),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(4),
@@ -384,7 +389,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         color: GhoomoColors.surfaceDark,
         borderRadius: BorderRadius.circular(GhoomoRadius.medium),
         border: Border.all(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           width: 1,
         ),
       ),
@@ -394,7 +399,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(GhoomoRadius.medium),
             ),
             child: Icon(
@@ -430,7 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _aiSettings[title] = newValue;
               });
             },
-            activeColor: GhoomoColors.primary,
+            activeThumbColor: GhoomoColors.primary,
           ),
         ],
       ),

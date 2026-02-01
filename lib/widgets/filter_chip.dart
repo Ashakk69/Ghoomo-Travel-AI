@@ -30,8 +30,9 @@ class FilterChipWidget extends StatelessWidget {
           color: isActive ? GhoomoColors.primary : GhoomoColors.surfaceDark,
           borderRadius: BorderRadius.circular(GhoomoRadius.full),
           border: Border.all(
-            color:
-                isActive ? GhoomoColors.primary : Colors.white.withOpacity(0.1),
+            color: isActive
+                ? GhoomoColors.primary
+                : Colors.white.withValues(alpha: 0.1),
             width: 1,
           ),
         ),

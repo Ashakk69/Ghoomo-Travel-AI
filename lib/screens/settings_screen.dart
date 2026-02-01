@@ -31,6 +31,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _appVersion = '';
   String _cacheSize = 'Calculating...';
   bool _isLoading = true;
+  bool _biometricAvailable = false;
+  bool _hasBiometricCredentials = false;
 
   @override
   void initState() {
@@ -59,6 +61,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       _cacheSize = 'Unknown';
     }
+
+    // Check biometric availability
+    _biometricAvailable = await _authService.isBiometricAvailable();
+    _hasBiometricCredentials = await _authService.hasBiometricCredentials();
 
     setState(() => _isLoading = false);
   }
@@ -95,12 +101,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
 
-    if (confirmed == true && mounted) {
+    if (confirmed == true) {
       await _authService.logout();
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
     }
   }
 
@@ -139,13 +147,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
 
-    if (confirmed == true && mounted) {
+    if (confirmed == true) {
       await _authService.deleteAccount();
       await _tripStorage.clearAllTrips();
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
     }
   }
 
@@ -229,6 +239,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildProfileSection(),
           const SizedBox(height: 24),
           _buildPreferencesSection(),
+          const SizedBox(height: 24),
+          _buildSecuritySection(),
           const SizedBox(height: 24),
           _buildDataSection(),
           const SizedBox(height: 24),
@@ -361,7 +373,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12),
       ),
       value: _preferences?.notificationsEnabled ?? true,
-      activeColor: const Color(0xFF6C63FF),
+      activeThumbColor: const Color(0xFF6C63FF),
       onChanged: (value) async {
         await _preferencesService.updateNotificationsEnabled(value);
         _loadData();
@@ -382,6 +394,211 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       trailing: const Icon(Icons.chevron_right, color: Colors.white54),
       onTap: () => _showThemePicker(),
+    );
+  }
+
+  Widget _buildSecuritySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            'Security',
+            style: GoogleFonts.outfit(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        _buildSettingsCard([
+          _buildBiometricTile(),
+        ]),
+      ],
+    );
+  }
+
+  Widget _buildBiometricTile() {
+    return SwitchListTile(
+      secondary: const Icon(Icons.fingerprint, color: Color(0xFF6C63FF)),
+      title: Text(
+        'Biometric Login',
+        style: GoogleFonts.outfit(color: Colors.white),
+      ),
+      subtitle: Text(
+        _biometricAvailable
+            ? (_hasBiometricCredentials
+                ? 'Enabled - Requires fingerprint to open app'
+                : 'Tap to enable biometric login')
+            : 'Not available on this device',
+        style: GoogleFonts.outfit(color: Colors.white54, fontSize: 12),
+      ),
+      value: _hasBiometricCredentials,
+      activeThumbColor: const Color(0xFF6C63FF),
+      onChanged: _biometricAvailable
+          ? (value) async {
+              if (value && !_hasBiometricCredentials) {
+                // Enable biometric - ask for password
+                await _showEnableBiometricDialog();
+              } else if (!value && _hasBiometricCredentials) {
+                // Disable biometric - clear credentials
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    backgroundColor: const Color(0xFF2A2A2A),
+                    title: Text(
+                      'Disable Biometric Login',
+                      style: GoogleFonts.outfit(color: Colors.white),
+                    ),
+                    content: Text(
+                      'This will remove your saved biometric credentials. You can re-enable it by logging in with "Remember me" checked.',
+                      style: GoogleFonts.outfit(color: Colors.white70),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text(
+                          'Cancel',
+                          style: GoogleFonts.outfit(color: Colors.white54),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: Text(
+                          'Disable',
+                          style: GoogleFonts.outfit(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirmed == true) {
+                  await _authService.clearBiometricCredentials();
+                  _loadData();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Biometric login disabled',
+                          style: GoogleFonts.outfit(),
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                }
+              }
+            }
+          : null,
+    );
+  }
+
+  Future<void> _showEnableBiometricDialog() async {
+    final passwordController = TextEditingController();
+    bool isVerifying = false;
+    String? error;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: const Color(0xFF2A2A2A),
+          title: Text(
+            'Enable Biometric Login',
+            style: GoogleFonts.outfit(color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Please enter your password to enable biometric login.',
+                style: GoogleFonts.outfit(color: Colors.white70),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                style: GoogleFonts.outfit(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  labelStyle: GoogleFonts.outfit(color: Colors.white54),
+                  errorText: error,
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isVerifying ? null : () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.outfit(color: Colors.white54),
+              ),
+            ),
+            TextButton(
+              onPressed: isVerifying
+                  ? null
+                  : () async {
+                      if (passwordController.text.isEmpty) {
+                        setState(() => error = 'Password required');
+                        return;
+                      }
+
+                      setState(() {
+                        isVerifying = true;
+                        error = null;
+                      });
+
+                      // Verify password by logging in
+                      final result = await _authService.login(
+                        email: _currentUser?.email ?? '',
+                        password: passwordController.text,
+                        rememberCredentials: true, // This enables biometric
+                      );
+
+                      if (result.success) {
+                        if (mounted) {
+                          Navigator.pop(context);
+                          _loadData(); // Refresh state
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Biometric login enabled',
+                                style: GoogleFonts.outfit(),
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      } else {
+                        setState(() {
+                          isVerifying = false;
+                          error = result.error ?? 'Verification failed';
+                        });
+                      }
+                    },
+              child: isVerifying
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      'Enable',
+                      style: GoogleFonts.outfit(color: const Color(0xFF6C63FF)),
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -593,12 +810,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _handleRateApp() async {
     const playStoreUrl =
         'https://play.google.com/store/apps/details?id=com.ghoomo.travel_planner';
-    const appStoreUrl =
-        'https://apps.apple.com/app/ghoomo-travel-planner/id123456789';
 
     // For Android, use Play Store URL; for iOS, use App Store URL
     // In a real app, you'd detect the platform
-    final url = playStoreUrl;
+    // ignore: unused_local_variable
+    const url = playStoreUrl;
 
     final confirmed = await showDialog<bool>(
       context: context,

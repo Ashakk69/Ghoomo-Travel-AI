@@ -27,7 +27,6 @@ class _FeedItemState extends State<FeedItem> {
   bool _isLiked = false;
   int _likeCount = 0;
   bool _isSaved = false;
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -45,7 +44,6 @@ class _FeedItemState extends State<FeedItem> {
       setState(() {
         _isLiked = liked;
         _isSaved = saved;
-        _isLoading = false;
       });
     }
   }
@@ -86,7 +84,7 @@ class _FeedItemState extends State<FeedItem> {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             width: 1,
           ),
         ),
@@ -139,7 +137,7 @@ class _FeedItemState extends State<FeedItem> {
                 ],
               ),
               border: Border.all(
-                color: GhoomoColors.primary.withOpacity(0.2),
+                color: GhoomoColors.primary.withValues(alpha: 0.2),
                 width: 2,
               ),
             ),
@@ -217,9 +215,9 @@ class _FeedItemState extends State<FeedItem> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.3),
+                        Colors.black.withValues(alpha: 0.3),
                         Colors.transparent,
-                        Colors.black.withOpacity(0.8),
+                        Colors.black.withValues(alpha: 0.8),
                       ],
                       stops: const [0.0, 0.4, 1.0],
                     ),
@@ -236,10 +234,10 @@ class _FeedItemState extends State<FeedItem> {
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         width: 1,
                       ),
                     ),
@@ -320,10 +318,12 @@ class _FeedItemState extends State<FeedItem> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isPrimary ? GhoomoColors.primary : Colors.white.withOpacity(0.2),
+        color: isPrimary
+            ? GhoomoColors.primary
+            : Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(GhoomoRadius.full),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           width: 1,
         ),
         boxShadow: isPrimary ? GhoomoShadows.medium : null,

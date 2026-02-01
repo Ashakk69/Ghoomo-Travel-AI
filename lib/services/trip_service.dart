@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/saved_SavedTrip.dart';
+import '../models/saved_trip.dart';
 
 /// Service for managing SavedTrips in Supabase database
 class SavedTripService {
@@ -22,7 +22,10 @@ class SavedTripService {
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 
-      return (response as List).map((json) => SavedTrip.fromJson(json)).toList();
+      return (response as List)
+          .map((json) => SavedTrip.fromJson(json))
+          .whereType<SavedTrip>()
+          .toList();
     } catch (e) {
       debugPrint('❌ Error loading SavedTrips: $e');
       return [];
@@ -30,7 +33,7 @@ class SavedTripService {
   }
 
   /// Save a new SavedTrip
-  Future<bool> saveSavedTrip(SavedTrip SavedTrip) async {
+  Future<bool> saveSavedTrip(SavedTrip savedTrip) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) {
@@ -38,10 +41,10 @@ class SavedTripService {
         return false;
       }
 
-      final SavedTripData = SavedTrip.toJson();
-      SavedTripData['user_id'] = userId;
+      final savedTripData = savedTrip.toJson();
+      savedTripData['user_id'] = userId;
 
-      await _supabase.from('SavedTrips').insert(SavedTripData);
+      await _supabase.from('SavedTrips').insert(savedTripData);
 
       debugPrint('✅ SavedTrip saved successfully');
       return true;
@@ -52,7 +55,7 @@ class SavedTripService {
   }
 
   /// Update an existing SavedTrip
-  Future<bool> updateSavedTrip(SavedTrip SavedTrip) async {
+  Future<bool> updateSavedTrip(SavedTrip savedTrip) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) {
@@ -60,14 +63,14 @@ class SavedTripService {
         return false;
       }
 
-      final SavedTripData = SavedTrip.toJson();
-      SavedTripData['user_id'] = userId;
-      SavedTripData['updated_at'] = DateTime.now().toIso8601String();
+      final savedTripData = savedTrip.toJson();
+      savedTripData['user_id'] = userId;
+      savedTripData['updated_at'] = DateTime.now().toIso8601String();
 
       await _supabase
           .from('SavedTrips')
-          .update(SavedTripData)
-          .eq('id', SavedTrip.id)
+          .update(savedTripData)
+          .eq('id', savedTrip.id)
           .eq('user_id', userId);
 
       debugPrint('✅ SavedTrip updated successfully');
@@ -79,7 +82,7 @@ class SavedTripService {
   }
 
   /// Delete a SavedTrip
-  Future<bool> deleteSavedTrip(String SavedTripId) async {
+  Future<bool> deleteSavedTrip(String savedTripId) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) {
@@ -90,7 +93,7 @@ class SavedTripService {
       await _supabase
           .from('SavedTrips')
           .delete()
-          .eq('id', SavedTripId)
+          .eq('id', savedTripId)
           .eq('user_id', userId);
 
       debugPrint('✅ SavedTrip deleted successfully');
@@ -102,7 +105,7 @@ class SavedTripService {
   }
 
   /// Get a single SavedTrip by ID
-  Future<SavedTrip?> getSavedTrip(String SavedTripId) async {
+  Future<SavedTrip?> getSavedTrip(String savedTripId) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) {
@@ -113,7 +116,7 @@ class SavedTripService {
       final response = await _supabase
           .from('SavedTrips')
           .select()
-          .eq('id', SavedTripId)
+          .eq('id', savedTripId)
           .eq('user_id', userId)
           .single();
 
@@ -126,7 +129,7 @@ class SavedTripService {
 
   /// Save a flight to a SavedTrip
   Future<bool> saveFlight({
-    required String SavedTripId,
+    required String savedTripId,
     required Map<String, dynamic> flightData,
   }) async {
     try {
@@ -138,7 +141,7 @@ class SavedTripService {
 
       await _supabase.from('saved_flights').insert({
         'user_id': userId,
-        'SavedTrip_id': SavedTripId,
+        'SavedTrip_id': savedTripId,
         'flight_data': flightData,
       });
 
@@ -152,7 +155,7 @@ class SavedTripService {
 
   /// Save a hotel to a SavedTrip
   Future<bool> saveHotel({
-    required String SavedTripId,
+    required String savedTripId,
     required Map<String, dynamic> hotelData,
   }) async {
     try {
@@ -164,7 +167,7 @@ class SavedTripService {
 
       await _supabase.from('saved_hotels').insert({
         'user_id': userId,
-        'SavedTrip_id': SavedTripId,
+        'SavedTrip_id': savedTripId,
         'hotel_data': hotelData,
       });
 
@@ -177,7 +180,8 @@ class SavedTripService {
   }
 
   /// Get saved flights for a SavedTrip
-  Future<List<Map<String, dynamic>>> getSavedTripFlights(String SavedTripId) async {
+  Future<List<Map<String, dynamic>>> getSavedTripFlights(
+      String savedTripId) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return [];
@@ -185,7 +189,7 @@ class SavedTripService {
       final response = await _supabase
           .from('saved_flights')
           .select('flight_data')
-          .eq('SavedTrip_id', SavedTripId)
+          .eq('SavedTrip_id', savedTripId)
           .eq('user_id', userId);
 
       return (response as List)
@@ -198,7 +202,8 @@ class SavedTripService {
   }
 
   /// Get saved hotels for a SavedTrip
-  Future<List<Map<String, dynamic>>> getSavedTripHotels(String SavedTripId) async {
+  Future<List<Map<String, dynamic>>> getSavedTripHotels(
+      String savedTripId) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return [];
@@ -206,7 +211,7 @@ class SavedTripService {
       final response = await _supabase
           .from('saved_hotels')
           .select('hotel_data')
-          .eq('SavedTrip_id', SavedTripId)
+          .eq('SavedTrip_id', savedTripId)
           .eq('user_id', userId);
 
       return (response as List)
@@ -230,6 +235,9 @@ class SavedTripService {
         .stream(primaryKey: ['id'])
         .eq('user_id', userId)
         .order('created_at', ascending: false)
-        .map((data) => data.map((json) => SavedTrip.fromJson(json)).toList());
+        .map((data) => data
+            .map((json) => SavedTrip.fromJson(json))
+            .whereType<SavedTrip>()
+            .toList());
   }
 }

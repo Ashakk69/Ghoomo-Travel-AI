@@ -55,7 +55,7 @@ class _SavedScreenState extends State<SavedScreen> {
     return Scaffold(
       backgroundColor: GhoomoColors.backgroundDark,
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'Saved',
           style: TextStyle(
             fontFamily: 'Space Grotesk',
@@ -159,7 +159,7 @@ class _SavedScreenState extends State<SavedScreen> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.8),
+                        Colors.black.withValues(alpha: 0.8),
                       ],
                     ),
                   ),
@@ -175,7 +175,7 @@ class _SavedScreenState extends State<SavedScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(

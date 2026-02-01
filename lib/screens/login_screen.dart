@@ -23,6 +23,7 @@ class _LoginScreenState extends State<LoginScreen>
   bool _obscurePassword = true;
   bool _rememberMe = true;
   bool _biometricAvailable = false;
+  bool _hasSavedCredentials = false;
   String? _errorMessage;
 
   late AnimationController _animationController;
@@ -57,8 +58,13 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _checkBiometricAvailability() async {
     final available = await _authService.isBiometricAvailable();
+    final hasCredentials = await _authService.hasBiometricCredentials();
+
     if (mounted) {
-      setState(() => _biometricAvailable = available);
+      setState(() {
+        _biometricAvailable = available;
+        _hasSavedCredentials = hasCredentials;
+      });
     }
   }
 
@@ -98,19 +104,37 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleBiometricLogin() async {
-    final result = await _authService.authenticateWithBiometrics();
+    setState(() => _isLoading = true);
 
-    if (!mounted) return;
+    try {
+      final result = await _authService.authenticateWithBiometrics();
 
-    if (result != null && result.success) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    } else if (result != null && result.error != null) {
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+
+      if (result != null && result.success) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      } else if (result != null && result.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error!),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.error!),
+          content: Text('Biometric authentication failed'),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -138,7 +162,8 @@ class _LoginScreenState extends State<LoginScreen>
                   const SizedBox(height: 24),
                   _buildLoginButton(),
                   const SizedBox(height: 16),
-                  if (_biometricAvailable) _buildBiometricButton(),
+                  if (_biometricAvailable && _hasSavedCredentials)
+                    _buildBiometricButton(),
                   const SizedBox(height: 24),
                   _buildForgotPassword(),
                   const SizedBox(height: 32),

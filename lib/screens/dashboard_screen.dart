@@ -21,7 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final WeatherService _weatherService = WeatherService();
   List<SavedTrip> _trips = [];
   Map<String, dynamic> _stats = {};
-  Map<String, WeatherData?> _weatherCache = {};
+  final Map<String, WeatherData?> _weatherCache = {};
   bool _isLoading = true;
 
   @override
@@ -67,7 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: GhoomoColors.backgroundDark,
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'My Trips',
           style: TextStyle(
             fontFamily: 'Space Grotesk',
@@ -95,7 +95,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.flight_takeoff, size: 80, color: Colors.white24),
+          const Icon(Icons.flight_takeoff, size: 80, color: Colors.white24),
           const SizedBox(height: 16),
           Text(
             'No saved trips yet',
@@ -125,12 +125,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            GhoomoColors.primary.withOpacity(0.3),
-            GhoomoColors.primary.withOpacity(0.1),
+            GhoomoColors.primary.withValues(alpha: 0.3),
+            GhoomoColors.primary.withValues(alpha: 0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(GhoomoRadius.large),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -200,7 +200,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       decoration: BoxDecoration(
         color: GhoomoColors.surfaceDark,
         borderRadius: BorderRadius.circular(GhoomoRadius.large),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),

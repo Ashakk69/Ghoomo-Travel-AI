@@ -72,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
     var destinations = _allDestinations;
 
     // Apply search filter
-    if (_searchController.text.isNotEmpty) {
+    if (_isSearching && _searchController.text.isNotEmpty) {
       final query = _searchController.text.toLowerCase();
       destinations = destinations
           .where((d) =>
@@ -206,41 +206,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      padding: const EdgeInsets.all(16.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Logo and title
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: GhoomoColors.primary,
-                  borderRadius: BorderRadius.circular(GhoomoRadius.full),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Explore',
+                  style: GhoomoTextStyles.h1,
                 ),
-                child: const Icon(
-                  Icons.travel_explore,
-                  color: GhoomoColors.accent,
-                  size: 20,
+                Text(
+                  'Find your dream destination',
+                  style: GhoomoTextStyles.body.copyWith(
+                    color: Colors.white70,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Ghoomo',
-                style: GhoomoTextStyles.h3.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-
-          // Search button
           IconButton(
             onPressed: _toggleSearch,
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
-            iconSize: 28,
+            icon: Icon(
+              _isSearching ? Icons.close : Icons.search,
+              color: Colors.white,
+              size: 28,
+            ),
           ),
         ],
       ),
@@ -249,33 +242,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: TextField(
         controller: _searchController,
-        autofocus: true,
         style: GhoomoTextStyles.body,
         decoration: InputDecoration(
           hintText: 'Search destinations...',
-          hintStyle: GhoomoTextStyles.body.copyWith(
-            color: Colors.grey,
-          ),
+          hintStyle: GhoomoTextStyles.body.copyWith(color: Colors.white54),
+          prefixIcon: const Icon(Icons.search, color: Colors.white54),
           filled: true,
-          fillColor: GhoomoColors.surfaceDark,
+          fillColor: GhoomoColors.surface,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(GhoomoRadius.full),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.grey),
-                  onPressed: () {
-                    setState(() {
-                      _searchController.clear();
-                    });
-                  },
-                )
-              : null,
+          contentPadding: const EdgeInsets.symmetric(vertical: 0),
         ),
         onChanged: (value) {
           setState(() {});
@@ -285,70 +266,38 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildFilterChips() {
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _filters.length,
-        itemBuilder: (context, index) {
-          final filter = _filters[index];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Row(
+        children: _filters.map((filter) {
           return Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 8),
             child: FilterChipWidget(
               label: filter,
               isActive: _selectedFilter == filter,
               onTap: () => _onFilterTap(filter),
             ),
           );
-        },
+        }).toList(),
       ),
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 80,
-              color: Colors.grey[600],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.search_off, size: 64, color: Colors.white24),
+          const SizedBox(height: 16),
+          Text(
+            'No destinations found',
+            style: GhoomoTextStyles.h2.copyWith(
+              color: Colors.white54,
             ),
-            const SizedBox(height: 24),
-            Text(
-              'No destinations found',
-              style: GhoomoTextStyles.h2.copyWith(
-                color: Colors.grey[400],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Try adjusting your filters or search terms',
-              textAlign: TextAlign.center,
-              style: GhoomoTextStyles.body.copyWith(
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _selectedFilter = 'Trending';
-                  _searchController.clear();
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: GhoomoColors.primary,
-                foregroundColor: GhoomoColors.accent,
-              ),
-              child: const Text('Clear Filters'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
