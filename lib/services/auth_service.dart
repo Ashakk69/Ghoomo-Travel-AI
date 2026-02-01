@@ -310,6 +310,9 @@ class AuthService {
   // Check if biometric authentication is available
   Future<bool> isBiometricAvailable() async {
     try {
+      // DEV MODE: Bypass for testing on PC
+      if (kDebugMode) return true;
+
       return await _localAuth.canCheckBiometrics &&
           await _localAuth.isDeviceSupported();
     } catch (e) {
@@ -321,13 +324,19 @@ class AuthService {
   // Authenticate with biometrics and auto-login
   Future<AuthResult?> authenticateWithBiometrics() async {
     try {
-      final authenticated = await _localAuth.authenticate(
+      var authenticated = await _localAuth.authenticate(
         localizedReason: 'Authenticate to access Travel AI',
         options: const AuthenticationOptions(
           stickyAuth: true,
           biometricOnly: true,
         ),
       );
+
+      // DEV MODE: Simulate success if auth fails locally (e.g. no hardware)
+      if (!authenticated && kDebugMode) {
+        debugPrint('DEV MODE: Simulating biometric success');
+        authenticated = true;
+      }
 
       if (!authenticated) {
         return null;
